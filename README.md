@@ -46,4 +46,4 @@ This mirrors how a terminal IT developer actually works: extending the TOS, cons
 
 ---
 
-**Contact:** Philippe Godfroy | [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
+**Contact:** Philippe Godfroy | [philippegodfroy.com](https://philippegodfroy.com) | [linkedin.com/in/philippe-godfroy](https://linkedin.com/in/philippe-godfroy) | philippe.godfroy@hotmail.com
