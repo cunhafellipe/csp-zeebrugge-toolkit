@@ -1,0 +1,48 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  groovy-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Spock test suite (N4 Groovy extensions)
+        run: gradle test --console=plain
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: groovy-test-report
+          path: build/reports/tests/test
+
+  python-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pandas matplotlib
+
+      - name: Compile-check BI reporting script
+        run: python -m py_compile bi-reporting/python/n4_report_generator.py

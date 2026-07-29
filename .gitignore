@@ -5,6 +5,8 @@ reports/
 *.class
 *.jar
 target/
+build/
+.gradle/
 .idea/
 .vscode/
 .DS_Store
