@@ -1,0 +1,32 @@
+name: Portfolio demo
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: portfolio-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Stage only public portfolio files
+        run: |
+          mkdir -p site/vbs-analytics site/docs/screenshots
+          cp index.html site/
+          cp vbs-analytics/index.html site/vbs-analytics/
+          cp docs/screenshots/*.png site/docs/screenshots/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deployment

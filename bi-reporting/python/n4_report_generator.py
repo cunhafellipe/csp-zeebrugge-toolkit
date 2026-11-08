@@ -47,10 +47,12 @@ def generate_data(n_containers=400, n_gate=1200, n_vessels=5):
     })
     containers['sla_breach'] = containers['dwell_days'] > SLA_DWELL
 
-    gate = pd.DataFrame({
-        'hour':         np.random.choice(range(24), n_gate, p=[
+    hour_weights = np.array([
             .005,.003,.001,.001,.001,.002,.008,.025,.045,.055,.052,.045,
-            .042,.048,.052,.058,.055,.045,.035,.025,.018,.012,.008,.005]),
+            .042,.048,.052,.058,.055,.045,.035,.025,.018,.012,.008,.005])
+    # These are relative traffic weights, not probabilities summing to one.
+    gate = pd.DataFrame({
+        'hour':         np.random.choice(range(24), n_gate, p=hour_weights / hour_weights.sum()),
         'gate_seconds': np.random.lognormal(3.5, 0.4, n_gate).clip(15, 180),
         'outcome':      np.random.choice(['APPROVED','BLOCKED','NO_SHOW'], n_gate, p=[.962,.024,.014]),
         'direction':    np.random.choice(['IN','OUT'], n_gate),

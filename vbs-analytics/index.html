@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VBS Analytics — CSP Zeebrugge</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>VBS Analytics — CSP Zeebrugge</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23163957'/%3E%3Cpath d='M12 15h16l-3 13H15zm8-8v8m-6 8h12' fill='none' stroke='%239bd9ff' stroke-width='2'/%3E%3C/svg%3E">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
@@ -57,6 +57,11 @@
     .pill-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
     .pill-red { background: rgba(248,81,73,.15); color: var(--red); }
     code { font-size: .8rem; color: var(--accent); }
+
+    .intro{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:12px 0 4px;}.intro h2{font-size:32px;letter-spacing:-1px;color:#f0f6ff;margin-bottom:8px;}.intro p,.demo-note{color:#a3b3c8;line-height:1.7;}.demo-note{font-size:12px;border-left:2px solid #388bfd;padding-left:12px;max-width:100ch;}.intro a{color:#92c6ff;white-space:nowrap;}.controls{display:flex;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:20px;}.controls label{display:flex;flex-direction:column;gap:8px;color:#a3b3c8;font-size:12px;}input,select,button{font:inherit;border:1px solid #39516a;border-radius:6px;background:#0d1724;color:#e6edf3;padding:10px 14px;}button{cursor:pointer;background:#174f82;}.table-scroll{overflow:auto;}table{min-width:690px;}#booking-count{font-size:12px;color:#a3b3c8;padding-bottom:10px;}:focus-visible{outline:2px solid #92c6ff;outline-offset:3px;}.card h2,.kpi-label{text-transform:none;letter-spacing:0;color:#a3b3c8;}.heatmap-grid{min-width:580px;}.card:has(.heatmap-grid){overflow:auto;}.card{min-width:0;}.charts-row,.charts-row-3{min-width:0;}.card canvas{max-width:100%;}
+    @media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr);}.charts-row,.charts-row-3{grid-template-columns:1fr;}.intro h2{font-size:28px;}}
+    @media(max-width:600px){main{padding:20px 16px;}header{padding:16px;}.header-right{display:none;}.kpi-row{grid-template-columns:repeat(2,1fr);}.intro{align-items:start;flex-direction:column;gap:12px;}.controls label:first-child{width:100%;}.controls input{width:100%;}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
   </style>
 </head>
 <body>
@@ -71,12 +76,14 @@
     </div>
     <div class="header-right">
       <span id="clock"></span>
-      <span class="live">● LIVE</span>
+      <span class="live">Simulated terminal day</span>
     </div>
   </div>
 </header>
 
 <main>
+  <section class="intro"><div><h2>A clearer view of the gate.</h2><p>Explore truck arrivals, pressure points and booking exceptions.</p></div><a href="../">About the toolkit</a></section>
+  <p class="demo-note">Independent portfolio simulation. Summary charts describe a synthetic terminal day; the booking table contains seven illustrative records. No connection to Camco or CSP systems.</p>
   <!-- KPIs -->
   <div class="kpi-row">
     <div class="kpi">
@@ -143,13 +150,14 @@
   <!-- Recent bookings table -->
   <div class="card">
     <h2>Recent VBS Bookings</h2>
-    <table>
+    <div class="controls"><label>Search bookings<input id="booking-search" type="search" placeholder="Container, truck or booking" oninput="drawTable()"></label><label>Status<select aria-label="Status" id="booking-status" onchange="drawTable()"><option value="all">All statuses</option><option>approved</option><option>blocked</option><option>delayed</option></select></label><button onclick="exportBookings()">Export filtered CSV</button><span id="booking-count" role="status"></span></div>
+    <div class="table-scroll"><table>
       <thead><tr>
         <th>Booking ID</th><th>Container</th><th>Direction</th>
         <th>Truck Plate</th><th>Slot</th><th>Gate Time</th><th>Status</th>
       </tr></thead>
       <tbody id="bookings-table"></tbody>
-    </table>
+    </table></div>
   </div>
 </main>
 
@@ -194,7 +202,7 @@ function init() {
   drawWeeklyChart();
   drawTable();
   startClock();
-  startLiveUpdates();
+  // Keep the scenario stable so screenshots and exports are reproducible.
 }
 
 function animateKPIs() {
@@ -325,7 +333,9 @@ function drawWeeklyChart() {
 function drawTable() {
   const tb = document.getElementById('bookings-table');
   const statusMap = {approved:'pill-green', blocked:'pill-red', delayed:'pill-yellow'};
-  tb.innerHTML = BOOKINGS.map(b => `
+  const rows = filteredBookings();
+  document.getElementById('booking-count').textContent = `${rows.length} of ${BOOKINGS.length} examples`;
+  tb.innerHTML = rows.length ? rows.map(b => `
     <tr>
       <td><code>${b.id}</code></td>
       <td><code>${b.container}</code></td>
@@ -334,9 +344,20 @@ function drawTable() {
       <td>${b.slot}</td>
       <td>${b.time}</td>
       <td><span class="pill ${statusMap[b.status]}">${b.status.toUpperCase()}</span></td>
-    </tr>`).join('');
+    </tr>`).join('') : '<tr><td colspan="7">No bookings match. Clear the search or choose another status.</td></tr>';
 }
 
+function filteredBookings() {
+  const q = document.getElementById('booking-search').value.toLowerCase();
+  const status = document.getElementById('booking-status').value;
+  return BOOKINGS.filter(b => (status === 'all' || b.status === status) && Object.values(b).some(v => v.toLowerCase().includes(q)));
+}
+function exportBookings() {
+  const fields = ['id','container','dir','plate','slot','time','status'];
+  const csv = [fields,...filteredBookings().map(b=>fields.map(k=>b[k]))].map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a = document.createElement('a');a.href=url;a.download='vbs-bookings-demo.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function chartOpts() {
   return {
     responsive: true,
